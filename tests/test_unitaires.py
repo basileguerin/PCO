@@ -32,11 +32,11 @@ class TestModelLoading(unittest.TestCase):
         mock_pickle_load.return_value = 'scaler'
         
         # Assume your function load_model_scaler() calls these
-        model = mock_load_model(';/training/model.h5')
+        model = mock_load_model('./training/model.h5')
         scaler = mock_pickle_load(mock_open('./training/scaler.pkl', 'rb'))
 
         # Check if the mocks are called correctly
-        mock_load_model.assert_called_once_with('path/to/model.h5')
-        mock_open.assert_called_once_with('path/to/scaler.pkl', 'rb')
+        mock_load_model.assert_called_once_with('./training/model.h5')
+        mock_open.assert_called_once_with('./training/scaler.pkl', 'rb')
         self.assertEqual(model, 'model')
         self.assertEqual(scaler, 'scaler')
