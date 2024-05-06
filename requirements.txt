@@ -1,5 +1,5 @@
 streamlit
 mysql-connector-python
 scikit-learn
-keras
+tensorflow
 bcrypt
