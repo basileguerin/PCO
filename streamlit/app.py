@@ -3,9 +3,12 @@ import mysql.connector
 import pandas as pd
 import numpy as np
 import pickle
-from keras.models import load_model
-import bcrypt
 import json
+import smtplib
+import bcrypt
+from datetime import datetime, timedelta
+from email.message import EmailMessage
+from keras.models import load_model
 
 # Configuration de la page Streamlit
 st.set_page_config(page_title='ER Admissions Forecasting', page_icon="📈", layout='wide')
@@ -73,6 +76,20 @@ def fetch_user_id(username):
     conn.close()
     return user_id
 
+def send_notification():
+    msg = EmailMessage()
+    msg.set_content("It's time to retrain the RNN model for ER admissions forecasting.")
+    msg['Subject'] = 'Model Retraining Reminder'
+    msg['From'] = 'basile.guerin1@gmail.com'
+    msg['To'] = 'basile.guerin1@gmail.com'
+
+    # Assuming SMTP server is setup
+    with smtplib.SMTP('smtp.gmail.com', 587) as s:
+        s.starttls()
+        s.login('basile.guerin1@gmail.com', 'umiw yate xbta mupd')
+        s.send_message(msg)
+        s.quit()
+
 # Interface de connexion et d'inscription
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -108,9 +125,11 @@ if st.session_state['logged_in']:
         df = pd.concat([df_urg, df_externe], axis=1)
         scaler = pickle.load(open('../training/scaler.pkl', 'rb'))
         df_scaled = pd.DataFrame(scaler.fit_transform(df), columns=df.columns, index=df.index)
+
         look_back = 14
         X1 = df_scaled.drop('value', axis=1).tail(14).values
         X2 = df_scaled['value'].tail(14).values
+
         X1 = np.expand_dims(X1, axis=0)
         X2 = np.expand_dims(X2, axis=0)
 
@@ -129,6 +148,20 @@ if st.session_state['logged_in']:
         st.line_chart(df_display)
 
         if st.button('Predict the next 7 days'):
+            # Check model training necessity
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT MAX(date) FROM URG_AD;")
+            last_update = cursor.fetchone()[0]
+            cursor.close()
+
+            if isinstance(last_update, str):
+                last_update = pd.to_datetime(last_update)
+
+            if last_update < (datetime.now() - timedelta(days=180)):
+                send_notification()
+                st.success("Retraining notification sent due to outdated model.")
+                
             predictions = []
             result_dict = {}
             for i in range(7):
@@ -152,7 +185,6 @@ if st.session_state['logged_in']:
 
             st.subheader('Model predictions :')
             st.json(result_dict)
-
 
 else:
     with st.sidebar:

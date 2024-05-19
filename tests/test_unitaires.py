@@ -31,7 +31,6 @@ class TestModelLoading(unittest.TestCase):
         mock_load_model.return_value = 'model'
         mock_pickle_load.return_value = 'scaler'
         
-        # Assume your function load_model_scaler() calls these
         model = mock_load_model('./training/model.h5')
         scaler = mock_pickle_load(mock_open('./training/scaler.pkl', 'rb'))
 
